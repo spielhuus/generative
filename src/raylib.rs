@@ -1,20 +1,9 @@
-// pub fn InitWindow(width: i32, height: i32, title: &str) {
-//     let c_title = CString::new(title).expect("Invalid title");
-//     unsafe {
-//         ffi::InitWindow(width, height, c_title.as_ptr());
-//     }
-// }
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default)]
 pub struct Color {
-    /// Color red value
     pub r: u8,
-    /// Color green value
     pub g: u8,
-    /// Color blue value
     pub b: u8,
-    /// Color alpha value
     pub a: u8,
 }
 
@@ -48,12 +37,6 @@ pub struct Camera3D {
     pub projection: i32,
 }
 
-// impl Into<ffi::Camera3D> for Camera3D {
-//     fn into(self) -> ffi::Camera3D {
-//         unsafe { std::mem::transmute(self) }
-//     }
-// }
-
 impl Camera3D {
     pub fn new(
         position: Vector3,
@@ -71,12 +54,6 @@ impl Camera3D {
         }
     }
 }
-
-// impl Into<ffi::Color> for Color {
-//     fn into(self) -> ffi::Color {
-//         unsafe { std::mem::transmute(self) }
-//     }
-// }
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default)]
@@ -105,38 +82,18 @@ impl Vector3 {
     }
 }
 
-// impl Into<ffi::Vector3> for Vector3 {
-//     fn into(self) -> ffi::Vector3 {
-//         unsafe { std::mem::transmute(self) }
-//     }
-// }
-
-// pub const fn translate(x: f32, y: f32, z: f32) -> ffi::Matrix {
-//     ffi::Matrix {
-//         m0: 1.0,
-//         m4: 0.0,
-//         m8: 0.0,
-//         m12: x,
-//         m1: 0.0,
-//         m5: 1.0,
-//         m9: 0.0,
-//         m13: y,
-//         m2: 0.0,
-//         m6: 0.0,
-//         m10: 1.0,
-//         m14: z,
-//         m3: 0.0,
-//         m7: 0.0,
-//         m11: 0.0,
-//         m15: 1.0,
-//     }
-// }
-//
 pub const WHITE: Color = Color {
     r: 255,
     g: 255,
     b: 255,
     a: 255,
+};
+
+pub const GREY: Color = Color {
+    r: 200,
+    g: 200,
+    b: 200,
+    a: 200,
 };
 
 pub const RED: Color = Color {
@@ -160,6 +117,132 @@ pub const BLACK: Color = Color {
     a: 255,
 };
 
+pub enum KeyboardKey {
+    KeyNull = 0, // Key: NULL, used for no key pressed
+    // Alphanumeric keys
+    Keyapostrophe = 39,   // Key: '
+    KeyComma = 44,        // Key: ,
+    KeyMinus = 45,        // Key: -
+    KeyPeriod = 46,       // Key: .
+    KeySlash = 47,        // Key: /
+    KeyZero = 48,         // Key: 0
+    KeyOne = 49,          // Key: 1
+    KeyTwo = 50,          // Key: 2
+    KeyThree = 51,        // Key: 3
+    KeyFour = 52,         // Key: 4
+    KeyFive = 53,         // Key: 5
+    KeySix = 54,          // Key: 6
+    KeySeven = 55,        // Key: 7
+    KeyEight = 56,        // Key: 8
+    KeyNine = 57,         // Key: 9
+    KeySemicolon = 59,    // Key: ;
+    KeyEqual = 61,        // Key: =
+    KeyA = 65,            // Key: A | a
+    KeyB = 66,            // Key: B | b
+    KeyC = 67,            // Key: C | c
+    KeyD = 68,            // Key: D | d
+    KeyE = 69,            // Key: E | e
+    KeyF = 70,            // Key: F | f
+    KeyG = 71,            // Key: G | g
+    KeyH = 72,            // Key: H | h
+    KeyI = 73,            // Key: I | i
+    KeyJ = 74,            // Key: J | j
+    KeyK = 75,            // Key: K | k
+    KeyL = 76,            // Key: L | l
+    KeyM = 77,            // Key: M | m
+    KeyN = 78,            // Key: N | n
+    KeyO = 79,            // Key: O | o
+    KeyP = 80,            // Key: P | p
+    KeyQ = 81,            // Key: Q | q
+    KeyR = 82,            // Key: R | r
+    KeyS = 83,            // Key: S | s
+    KeyT = 84,            // Key: T | t
+    KeyU = 85,            // Key: U | u
+    KeyV = 86,            // Key: V | v
+    KeyW = 87,            // Key: W | w
+    KeyX = 88,            // Key: X | x
+    KeyY = 89,            // Key: Y | y
+    KeyZ = 90,            // Key: Z | z
+    KeyLeftBracket = 91,  // Key: [
+    KeyBackslash = 92,    // Key: '\'
+    KeyRightBracket = 93, // Key: ]
+    KeyGrave = 96,        // Key: `
+    // Function keys
+    KeySpace = 32,         // Key: Space
+    KeyEscape = 256,       // Key: Esc
+    KeyEnter = 257,        // Key: Enter
+    KeyTab = 258,          // Key: Tab
+    KeyBackspace = 259,    // Key: Backspace
+    KeyInsert = 260,       // Key: Ins
+    KeyDelete = 261,       // Key: Del
+    KeyRight = 262,        // Key: Cursor right
+    KeyLeft = 263,         // Key: Cursor left
+    KeyDown = 264,         // Key: Cursor down
+    KeyUp = 265,           // Key: Cursor up
+    KeyPageUp = 266,       // Key: Page up
+    KeyPageDown = 267,     // Key: Page down
+    KeyHome = 268,         // Key: Home
+    KeyEnd = 269,          // Key: End
+    KeyCapsLock = 280,     // Key: Caps lock
+    KeyScrollLock = 281,   // Key: Scroll down
+    KeyNumLock = 282,      // Key: Num lock
+    KeyPrintScreen = 283,  // Key: Print screen
+    KeyPause = 284,        // Key: Pause
+    KeyF1 = 290,           // Key: F1
+    KeyF2 = 291,           // Key: F2
+    KeyF3 = 292,           // Key: F3
+    KeyF4 = 293,           // Key: F4
+    KeyF5 = 294,           // Key: F5
+    KeyF6 = 295,           // Key: F6
+    KeyF7 = 296,           // Key: F7
+    KeyF8 = 297,           // Key: F8
+    KeyF9 = 298,           // Key: F9
+    KeyF10 = 299,          // Key: F10
+    KeyF11 = 300,          // Key: F11
+    KeyF12 = 301,          // Key: F12
+    KeyLeftShift = 340,    // Key: Shift left
+    KeyLeftControl = 341,  // Key: Control left
+    KeyLeftAlt = 342,      // Key: Alt left
+    KeyLeftSuper = 343,    // Key: Super left
+    KeyRightShift = 344,   // Key: Shift right
+    KeyRightControl = 345, // Key: Control right
+    KeyRightAlt = 346,     // Key: Alt right
+    KeyRightSuper = 347,   // Key: Super right
+    KeyKbMenu = 348,       // Key: KB menu
+    // Keypad keys
+    KeyKp0 = 320,        // Key: Keypad 0
+    KeyKp1 = 321,        // Key: Keypad 1
+    KeyKp2 = 322,        // Key: Keypad 2
+    KeyKp3 = 323,        // Key: Keypad 3
+    KeyKp4 = 324,        // Key: Keypad 4
+    KeyKp5 = 325,        // Key: Keypad 5
+    KeyKp6 = 326,        // Key: Keypad 6
+    KeyKp7 = 327,        // Key: Keypad 7
+    KeyKp8 = 328,        // Key: Keypad 8
+    KeyKp9 = 329,        // Key: Keypad 9
+    KeyKpSecimal = 330,  // Key: Keypad .
+    KeyKpDivide = 331,   // Key: Keypad /
+    KeyKpMultiply = 332, // Key: Keypad *
+    KeyKpSubtract = 333, // Key: Keypad -
+    KeyKpAdd = 334,      // Key: Keypad +
+    KeyKpEnter = 335,    // Key: Keypad Enter
+    KeyKpEqual = 336,    // Key: Keypad =
+    // Android key buttons
+    KeyBack = 4,        // Key: Android back button
+    KeyMenu = 5,        // Key: Android menu button
+    KeyVolumeUp = 24,   // Key: Android volume up button
+    KeyVolumeDown = 25, // Key: Android volume down button
+}
+
+#[allow(non_snake_case)]
+pub fn IsKeyPressed(key: KeyboardKey) -> bool {
+    unsafe { RayIsKeyPressed(key as i32) }
+}
+#[allow(non_snake_case)]
+pub fn IsKeyDown(key: KeyboardKey) -> bool {
+    unsafe { RayIsKeyDown(key as i32) }
+}
+
 unsafe extern "C" {
     pub fn BeginDrawing();
     pub fn EndDrawing();
@@ -171,6 +254,8 @@ unsafe extern "C" {
     pub fn GetScreenHeight() -> i32;
     pub fn WindowShouldClose() -> bool;
     pub fn ClearBackground(color: Color);
+    pub fn DrawLine(start_x: i32, start_y: i32, end_x: i32, end_y: i32, color: Color);
+    pub fn DrawCircle(center_x: i32, center_y: i32, radius: f32, color: Color);
     pub fn DrawCircleV(v: Vector2, radius: f32, color: Color);
     pub fn DrawRectangle(x: i32, y: i32, width: i32, height: i32, color: Color);
     pub fn DrawRectanglePro(rec: Rectangle, origin: Vector2, rotation: f32, color: Color);
@@ -183,4 +268,8 @@ unsafe extern "C" {
         fontSize: i32,
         color: Color,
     );
+    #[link_name = "IsKeyPressed"]
+    pub fn RayIsKeyPressed(key: i32) -> bool;
+    #[link_name = "IsKeyDown"]
+    pub fn RayIsKeyDown(key: i32) -> bool;
 }
