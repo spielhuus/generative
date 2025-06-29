@@ -61,7 +61,6 @@ pub enum GuiControlProperty {
 
 #[allow(non_snake_case)]
 pub fn GuiSetStyle(control: GuiControl, property: GuiControlProperty, value: i32) {
-    println!("set_style: {}", property.clone() as i32);
     unsafe {
         RayGuiSetStyle(control as i32, property as i32, value);
     }
@@ -83,5 +82,10 @@ unsafe extern "C" {
     pub fn GuiButton(bounds: Rectangle, text: *const ::std::os::raw::c_char) -> i32;
     #[link_name = "GuiSetStyle"]
     pub fn RayGuiSetStyle(control: i32, property: i32, value: i32);
+    pub fn GuiComboBox(
+        bounds: Rectangle,
+        text: *const ::std::os::raw::c_char,
+        active: *mut i32,
+    ) -> i32;
 
 }

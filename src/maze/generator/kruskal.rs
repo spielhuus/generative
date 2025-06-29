@@ -1,10 +1,7 @@
 use disjoint::DisjointSet;
 use rand::prelude::*;
 
-use crate::{
-    maze::{Board, Generator, State},
-    raylib,
-};
+use crate::maze::{Board, Generator, State};
 
 #[derive(Debug, Eq, PartialEq)]
 enum Direction {
@@ -98,18 +95,6 @@ impl Generator for Kruskal {
             return State::GenerationDone;
         }
 
-        // draw visited cells
-        for cell in &self.cells {
-            unsafe {
-                raylib::DrawRectangle(
-                    board.x + board.cells[cell.1 as usize].x * board.cell_size + 2,
-                    board.y + board.cells[cell.2 as usize].y * board.cell_size + 2,
-                    board.cell_size - 4,
-                    board.cell_size - 4,
-                    raylib::ColorFromHSV(100.0, 0.75, 1.0 / self.step as f32 * cell.0 as f32),
-                );
-            }
-        }
         self.step += 1;
         State::Generate
     }

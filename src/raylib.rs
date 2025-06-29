@@ -1,3 +1,10 @@
+#[macro_export]
+macro_rules! str {
+    ($str:expr) => {
+        CString::new($str).expect("cstr").as_ptr();
+    };
+}
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default)]
 pub struct Color {
@@ -254,6 +261,7 @@ unsafe extern "C" {
     pub fn GetScreenHeight() -> i32;
     pub fn WindowShouldClose() -> bool;
     pub fn ClearBackground(color: Color);
+    pub fn ColorFromHSV(hue: f32, saturation: f32, value: f32) -> Color;
     pub fn DrawLine(start_x: i32, start_y: i32, end_x: i32, end_y: i32, color: Color);
     pub fn DrawCircle(center_x: i32, center_y: i32, radius: f32, color: Color);
     pub fn DrawCircleV(v: Vector2, radius: f32, color: Color);

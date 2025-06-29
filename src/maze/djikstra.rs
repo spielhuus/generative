@@ -1,4 +1,5 @@
 use super::Board;
+use crate::{maze::State, raylib};
 
 #[derive(Default, Clone, Copy, Debug)]
 pub struct Weight {
@@ -10,7 +11,6 @@ pub struct Weight {
 pub struct Solver {
     start: (usize, usize),
     end: (usize, usize),
-    board_size: usize,
     positions: Vec<usize>,
     pub path: Vec<usize>,
     pub weights: Vec<Option<Weight>>,
@@ -19,17 +19,16 @@ pub struct Solver {
 }
 
 impl Solver {
-    pub fn new(start: (usize, usize), end: (usize, usize), board_size: usize) -> Self {
-        let mut weights = vec![None; board_size * board_size];
+    pub fn from(board: &Board) -> Self {
+        let mut weights = vec![None; (board.board_size as usize) * (board.board_size as usize)];
         weights[0] = Some(Weight {
-            x: 1,
-            y: 1,
+            x: 0,
+            y: 0,
             weight: 1,
         });
         Self {
-            start,
-            end,
-            board_size,
+            start: (0, 0),
+            end: (board.board_size as usize - 1, board.board_size as usize - 1),
             positions: vec![0],
             path: vec![],
             weights,
@@ -38,36 +37,99 @@ impl Solver {
         }
     }
 
-    pub fn neighbours(&self, board: &Board, index: usize) -> Vec<Option<usize>> {
-        let mut res = Vec::<Option<usize>>::new();
-        if board.cells[index].y > 1 {
-            res.push(Some(index - 1));
-        } else {
-            res.push(None);
-        }
-        if board.cells[index].y < self.board_size as i32 - 1 {
-            res.push(Some(index + 1));
-        } else {
-            res.push(None);
-        }
-        if board.cells[index].x > 1 {
-            res.push(Some(index - self.board_size + 1));
-        } else {
-            res.push(None);
-        }
-        if board.cells[index].x < self.board_size as i32 - 1 {
-            res.push(Some(index + self.board_size - 1));
-        } else {
-            res.push(None);
-        }
-        res
+    fn get_max_weight(&self) -> usize {
+        self.weights
+            .iter()
+            .flatten()
+            .max_by(|a, b| a.weight.cmp(&b.weight))
+            .unwrap()
+            .weight
     }
 
-    pub fn step(&mut self, board: &Board) {
+    pub fn step(&mut self, board: &Board) -> State {
+        if self.solved {
+            State::Done
+        } else if !self.reached_end {
+            self.search_path(board)
+        } else if !self.solved {
+            self.path(board)
+        } else {
+            panic!("unknown state")
+        }
+    }
+
+    pub fn path(&mut self, board: &Board) -> State {
+        let index: usize = *self.path.last().unwrap();
+        let neighbours = board.neighbours(index as i32);
+        let mut free: Vec<(usize, &Option<usize>)> = neighbours
+            .iter()
+            .enumerate()
+            .filter(|&(d, i)| {
+                if (i.is_some()
+                    && !self.path.contains(&i.unwrap())
+                    && self.weights[i.unwrap()].is_some())
+                    && ((d == 0 && !board.cells[index].walls.top)
+                        || (d == 1 && !board.cells[index].walls.bottom)
+                        || (d == 2 && !board.cells[index].walls.left)
+                        || (d == 3 && !board.cells[index].walls.right))
+                {
+                    return true;
+                }
+                false
+            })
+            .collect();
+        free.sort_by(|a, b| {
+            self.weights[a.1.unwrap()]
+                .unwrap()
+                .weight
+                .cmp(&self.weights[b.1.unwrap()].unwrap().weight)
+        });
+        if let Some(next) = free.first() {
+            self.path.push(next.1.unwrap());
+            if self.weights[next.1.unwrap()].unwrap().x == self.start.0
+                && self.weights[next.1.unwrap()].unwrap().y == self.start.1
+            {
+                self.solved = true;
+                return State::Solve;
+            }
+        }
+
+        // draw the result
+        unsafe {
+            if !self.solved {
+                for (index, weight) in self.weights.iter().enumerate() {
+                    if let Some(weight) = weight {
+                        if self.path.contains(&index) {
+                            raylib::DrawCircle(
+                                board.x + weight.x as i32 * board.cell_size + board.cell_size / 2,
+                                board.y + weight.y as i32 * board.cell_size + board.cell_size / 2,
+                                board.cell_size as f32 / 10.0,
+                                raylib::WHITE,
+                            );
+                        } else {
+                            raylib::DrawCircle(
+                                board.x + weight.x as i32 * board.cell_size + board.cell_size / 2,
+                                board.y + weight.y as i32 * board.cell_size + board.cell_size / 2,
+                                board.cell_size as f32 / 10.0,
+                                raylib::ColorFromHSV(
+                                    115.0,
+                                    0.75,
+                                    1.0 / self.get_max_weight() as f32 * weight.weight as f32,
+                                ),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        State::Solve
+    }
+
+    fn search_path(&mut self, board: &Board) -> State {
         let mut next_cells: Vec<usize> = vec![];
         for index in &self.positions {
             let weight = self.weights[*index].unwrap();
-            let neighbours = self.neighbours(board, *index);
+            let neighbours = board.neighbours(*index as i32);
             let free: Vec<(usize, &Option<usize>)> = neighbours
                 .iter()
                 .enumerate()
@@ -102,41 +164,20 @@ impl Solver {
             }
         }
         self.positions = next_cells;
-    }
-
-    pub fn path(&mut self, board: &Board) {
-        let index: usize = *self.path.last().unwrap();
-        let neighbours = self.neighbours(board, index);
-        let mut free: Vec<(usize, &Option<usize>)> = neighbours
-            .iter()
-            .enumerate()
-            .filter(|&(d, i)| {
-                if (i.is_some()
-                    && !self.path.contains(&i.unwrap())
-                    && self.weights[i.unwrap()].is_some())
-                    && ((d == 0 && !board.cells[index].walls.top)
-                        || (d == 1 && !board.cells[index].walls.bottom)
-                        || (d == 2 && !board.cells[index].walls.left)
-                        || (d == 3 && !board.cells[index].walls.right))
-                {
-                    return true;
-                }
-                false
-            })
-            .collect();
-        free.sort_by(|a, b| {
-            self.weights[a.1.unwrap()]
-                .unwrap()
-                .weight
-                .cmp(&self.weights[b.1.unwrap()].unwrap().weight)
-        });
-        let next = free.first().unwrap();
-        self.path.push(next.1.unwrap());
-
-        if self.weights[next.1.unwrap()].unwrap().x == self.start.0
-            && self.weights[next.1.unwrap()].unwrap().y == self.start.1
-        {
-            self.solved = true;
+        unsafe {
+            for weight in self.weights.iter().flatten() {
+                raylib::DrawCircle(
+                    board.x + weight.x as i32 * board.cell_size + board.cell_size / 2,
+                    board.y + weight.y as i32 * board.cell_size + board.cell_size / 2,
+                    board.cell_size as f32 / 10.0,
+                    raylib::ColorFromHSV(
+                        100.0,
+                        0.75,
+                        1.0 / self.get_max_weight() as f32 * weight.weight as f32,
+                    ),
+                );
+            }
         }
+        State::Solve
     }
 }

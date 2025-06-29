@@ -4,9 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+disjoint = "0.8"
 rand = "0.9"
 
 [build-dependencies]
 cmake = "0.1.51"
 cc = "1.0"
-bindgen = "0.71"
+disjoint = "0.8"
