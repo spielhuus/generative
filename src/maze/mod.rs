@@ -4,6 +4,14 @@ pub mod path;
 
 use crate::raylib;
 
+#[derive(Debug)]
+pub enum Direction {
+    North,
+    South,
+    East,
+    West,
+}
+
 pub const WALL_COLOR: raylib::Color = raylib::Color {
     r: 100,
     g: 100,
@@ -70,6 +78,23 @@ impl Cell {
             y,
             visited: false,
             walls: Walls::default(),
+        }
+    }
+
+    /***
+     * Gives the direction of the other cell to this one
+     */
+    pub fn direction(&self, other: &Cell) -> Direction {
+        if self.x == other.x && self.y < other.y {
+            Direction::South
+        } else if self.x == other.x && self.y > other.y {
+            Direction::North
+        } else if self.x > other.x && self.y == other.y {
+            Direction::West
+        } else if self.x < other.x && self.y == other.y {
+            Direction::East
+        } else {
+            panic!("whohwo")
         }
     }
 }

@@ -2,7 +2,7 @@ use generative::{
     maze::{
         Board, Generator, State,
         djikstra::{self, Solver},
-        generator::{backtracking::Backtracking, eller::Eller, kruskal::Kruskal},
+        generator::{backtracking::Backtracking, eller::Eller, kruskal::Kruskal, prim::Prim},
         path,
     },
     raygui, raylib, str,
@@ -26,6 +26,7 @@ fn init_maze(cell_size: i32) -> (Board, Box<dyn Generator>, Solver) {
             0 => Box::new(Backtracking::new()),
             1 => Box::new(Kruskal::new(&board)),
             2 => Box::new(Eller::new(&board)),
+            3 => Box::new(Prim::new(&board)),
             _ => panic!(),
         };
         STATE = State::Wait;
@@ -117,7 +118,7 @@ fn main() {
                     width: 200.0,
                     height: 30.0,
                 },
-                str!("recursive backtracker;kruskal;eller"),
+                str!("recursive backtracker;kruskal;eller;prim"),
                 &mut new_generator,
             );
             if new_generator != SELECTED_GENERATOR {
