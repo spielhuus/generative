@@ -8,7 +8,7 @@ use crate::{
 #[derive(Debug)]
 struct FreeCell {
     index: usize,
-    neighbour: usize,
+    neighbor: usize,
 }
 
 pub struct Prim {
@@ -20,12 +20,12 @@ impl Prim {
     pub fn new(board: &Board) -> Self {
         let current = rand::rng().random_range(0..board.board_size ^ 2) as usize;
         let cells = board
-            .neighbours(current as i32)
+            .neighbors(current as i32)
             .into_iter()
             .flatten()
             .map(|index| FreeCell {
                 index,
-                neighbour: current,
+                neighbor: current,
             })
             .collect();
 
@@ -49,37 +49,21 @@ impl Generator for Prim {
     fn step(&mut self, board: &mut Board) -> State {
         let index = rand::rng().random_range(0..self.cells.len()) as usize;
         let item = self.cells.remove(index);
+
         // remove wall
-        match board.cells[item.index].direction(&board.cells[item.neighbour]) {
-            crate::maze::Direction::North => {
-                board.cells[item.index].walls.top = false;
-                board.cells[item.neighbour].walls.bottom = false;
-            }
-            crate::maze::Direction::South => {
-                board.cells[item.index].walls.bottom = false;
-                board.cells[item.neighbour].walls.top = false;
-            }
-            crate::maze::Direction::East => {
-                board.cells[item.index].walls.right = false;
-                board.cells[item.neighbour].walls.left = false;
-            }
-            crate::maze::Direction::West => {
-                board.cells[item.index].walls.left = false;
-                board.cells[item.neighbour].walls.right = false;
-            }
-        }
+        board.remove_wall(item.index, item.neighbor);
 
         // calc next cells
-        let neighbours: Vec<usize> = board
-            .neighbours(item.index as i32)
+        let neighbors: Vec<usize> = board
+            .neighbors(item.index as i32)
             .into_iter()
             .flatten()
             .collect();
-        for n in &neighbours {
+        for n in &neighbors {
             if !self.contains(n) {
                 self.cells.push(FreeCell {
                     index: *n,
-                    neighbour: item.index,
+                    neighbor: item.index,
                 });
             }
         }
@@ -92,7 +76,7 @@ impl Generator for Prim {
                 raylib::DrawCircle(
                     board.x + board.cells[i.index].x * board.cell_size + board.cell_size / 2,
                     board.y + board.cells[i.index].y * board.cell_size + board.cell_size / 2,
-                    board.cell_size as f32 / 4.0,
+                    board.cell_size as f32 / 5.0,
                     CURSOR_COLOR,
                 );
             }
@@ -104,4 +88,6 @@ impl Generator for Prim {
             State::Generate
         }
     }
+
+    fn draw(&self, _board: &Board) {}
 }

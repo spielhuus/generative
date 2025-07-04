@@ -1,131 +1,33 @@
+use std::collections::HashMap;
+
 use disjoint::DisjointSet;
 use rand::prelude::*;
 
-use crate::maze::{Board, Generator, State};
+use crate::maze::{Board, CURSOR_COLOR, Generator, State};
 pub const BOOL_TRUE_PROBABILITY: f64 = 0.5;
 
 enum IState {
-    Start,
     Merge,
     Bottom,
     Last,
-    Finished,
 }
 
 pub struct Eller {
-    current_row: i32,
-    current_col: i32,
+    x: i32,
+    y: i32,
     merged: DisjointSet,
     state: IState,
+    row: HashMap<usize, Vec<usize>>,
 }
 
 impl Eller {
     pub fn new(board: &Board) -> Self {
         Self {
-            current_row: 0,
-            current_col: 0,
+            x: 0,
+            y: 0,
             merged: DisjointSet::with_len(board.cells.len()),
-            state: IState::Start,
-        }
-    }
-
-    fn first_row<R: Rng>(&mut self, board: &mut Board, rng: &mut R) {
-        let current_cell = board.get_index(self.current_col, self.current_row) as usize;
-        let next_cell = board.get_index(self.current_col + 1, self.current_row) as usize;
-        if !self.merged.is_joined(current_cell, next_cell) && rng.random_bool(BOOL_TRUE_PROBABILITY)
-        {
-            self.merged.join(current_cell, next_cell);
-            board.cells[current_cell].walls.right = false;
-            board.cells[next_cell].walls.left = false;
-        }
-        self.current_col += 1;
-    }
-
-    fn join_cells(&mut self, board: &mut Board) {
-        let current_cell = board.get_index(self.current_col, self.current_row) as usize;
-        let next_cell = board.get_index(self.current_col + 1, self.current_row) as usize;
-        if !self.merged.is_joined(current_cell, next_cell) {
-            self.merged.join(current_cell, next_cell);
-            board.cells[current_cell].walls.right = false;
-            board.cells[next_cell].walls.left = false;
-        }
-        self.current_col += 1;
-    }
-
-    fn open_bottom<R: Rng>(&mut self, board: &mut Board, mut rng: &mut R) {
-        let mut cells = Vec::new();
-        let first_cell = board.get_index(self.current_col, self.current_row) as usize;
-        cells.push(first_cell);
-        self.current_col += 1;
-        while self.current_col < board.board_size
-            && self.merged.is_joined(
-                first_cell,
-                board.get_index(self.current_col, self.current_row) as usize,
-            )
-        {
-            cells.push(board.get_index(self.current_col, self.current_row) as usize);
-            self.current_col += 1;
-        }
-        let mut opened = false;
-        for index in &cells {
-            if rng.random_bool(BOOL_TRUE_PROBABILITY) {
-                let next_index =
-                    board.get_index(board.cells[*index].x, board.cells[*index].y + 1) as usize;
-                self.merged.join(*index, next_index);
-                board.cells[*index].walls.bottom = false;
-                board.cells[next_index].walls.top = false;
-                opened = true;
-            }
-        }
-
-        if !opened {
-            let index = if cells.len() == 1 {
-                cells[0]
-            } else if let Some(&index) = cells.choose(&mut rng) {
-                index
-            } else {
-                panic!("no item selected");
-            };
-
-            let next_index =
-                board.get_index(board.cells[index].x, board.cells[index].y + 1) as usize;
-            self.merged.join(index, next_index);
-            board.cells[index].walls.bottom = false;
-            board.cells[next_index].walls.top = false;
-        }
-        self.current_col -= 1;
-    }
-
-    fn last_row<R: Rng>(&mut self, board: &mut Board, rng: &mut R) {
-        // self.join_cells(board, rng);
-        for i in 0..board.board_size as usize {
-            let current_cell = board.get_index(i as i32, self.current_row) as usize;
-            if !self.merged.is_joined(0, current_cell) {
-                self.merged.join(0, current_cell);
-                if i == board.board_size as usize - 1 {
-                    if rng.random_bool(BOOL_TRUE_PROBABILITY) {
-                        let prev_cell = board.get_index(i as i32 - 1, self.current_row) as usize;
-                        board.cells[current_cell].walls.left = false;
-                        board.cells[prev_cell].walls.right = false;
-                    } else {
-                        let top_cell = board.get_index(i as i32, self.current_row - 1) as usize;
-                        board.cells[current_cell].walls.top = false;
-                        board.cells[top_cell].walls.bottom = false;
-                    }
-                } else {
-                    let current_cell = board.get_index(i as i32, self.current_row) as usize;
-                    let next_cell = board.get_index(i as i32 + 1, self.current_row) as usize;
-                    let top_cell = board.get_index(i as i32, self.current_row - 1) as usize;
-                    board.cells[current_cell].walls.right = false;
-                    board.cells[next_cell].walls.left = false;
-                    if i > 0 {
-                        board.cells[current_cell].walls.left = false;
-                        board.cells[next_cell].walls.right = false;
-                    }
-                    board.cells[current_cell].walls.top = false;
-                    board.cells[top_cell].walls.bottom = false;
-                }
-            }
+            state: IState::Merge,
+            row: HashMap::new(),
         }
     }
 }
@@ -133,44 +35,96 @@ impl Eller {
 impl Generator for Eller {
     fn step(&mut self, board: &mut Board) -> State {
         let mut rng = rand::rng();
+
         match self.state {
-            IState::Start => {
-                self.first_row(board, &mut rng);
-                if self.current_col >= board.board_size - 1 {
-                    self.current_col = 0;
-                    self.state = IState::Merge;
-                }
-            }
             IState::Merge => {
-                self.join_cells(board);
-                if self.current_col >= board.board_size - 1 {
-                    self.current_col = 0;
-                    self.state = IState::Bottom;
+                let cell = board.get_index(self.x, self.y) as usize;
+                let neighbor = board.get_index(self.x + 1, self.y) as usize;
+
+                if !self.merged.is_joined(cell, neighbor)
+                    && (rng.random_bool(BOOL_TRUE_PROBABILITY) || self.y >= board.board_size - 1)
+                {
+                    self.merged.join(cell, neighbor);
+                    board.remove_wall(cell, neighbor);
                 }
-            }
-            IState::Bottom => {
-                self.open_bottom(board, &mut rng);
-                if self.current_col < board.board_size - 1 {
-                    self.current_col += 1;
-                } else {
-                    self.current_col = 0;
-                    self.current_row += 1;
-                    if self.current_row >= board.board_size - 1 {
+
+                self.row
+                    .entry(self.merged.root_of(cell))
+                    .or_default()
+                    .push(cell);
+
+                self.x += 1;
+                if self.x >= board.board_size - 1 {
+                    self.row
+                        .entry(
+                            self.merged
+                                .root_of(board.get_index(self.x, self.y) as usize),
+                        )
+                        .or_default()
+                        .push(board.get_index(self.x, self.y) as usize);
+                    self.x = 0;
+                    if self.y == board.board_size - 1 {
                         self.state = IState::Last;
                     } else {
-                        self.state = IState::Merge;
+                        self.state = IState::Bottom;
                     }
                 }
+                State::Generate
+            }
+            IState::Bottom => {
+                let cell = board.get_index(self.x, self.y) as usize;
+                let neighbor = board.get_index(self.x, self.y + 1) as usize;
+                if !self.merged.is_joined(cell, neighbor) && rng.random_bool(BOOL_TRUE_PROBABILITY)
+                {
+                    self.merged.join(cell, neighbor);
+                    board.remove_wall(cell, neighbor);
+                    self.row.remove(&self.merged.root_of(cell));
+                }
+
+                self.x += 1;
+                if self.x >= board.board_size {
+                    for cells in self.row.values() {
+                        if let Some(&index) = cells.choose(&mut rng) {
+                            let neighbor =
+                                board.get_index(board.cells[index].x, board.cells[index].y + 1);
+                            board.remove_wall(index, neighbor as usize);
+                        } else {
+                            panic!("no top neigbhor");
+                        }
+                    }
+                    self.row.clear();
+                    self.x = 0;
+                    self.y += 1;
+                    self.state = IState::Merge;
+                }
+                State::Generate
             }
             IState::Last => {
-                self.last_row(board, &mut rng);
-                self.state = IState::Finished;
-            }
-            IState::Finished => {
-                return State::GenerationDone;
+                let cell = board.get_index(self.x, self.y) as usize;
+                let neighbor = board.get_index(self.x, self.y - 1) as usize;
+                if !self.merged.is_joined(cell, neighbor) {
+                    self.merged.join(cell, neighbor);
+                    board.remove_wall(cell, neighbor);
+                    self.row.remove(&self.merged.root_of(cell));
+                }
+
+                self.x += 1;
+                if self.x >= board.board_size - 1 {
+                    for cells in self.row.values() {
+                        if let Some(&index) = cells.choose(&mut rng) {
+                            let neighbor =
+                                board.get_index(board.cells[index].x, board.cells[index].y - 1);
+                            board.remove_wall(index, neighbor as usize);
+                        } else {
+                            panic!("no top neigbhor");
+                        }
+                    }
+                    self.row.clear();
+                }
+                State::GenerationDone
             }
         }
-
-        State::Generate
     }
+
+    fn draw(&self, _board: &Board) {}
 }

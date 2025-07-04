@@ -64,7 +64,7 @@ impl Generator for Kruskal {
         let edge: Option<Edge> = self.edges.pop();
         if let Some(edge) = edge {
             let index_cell = board.get_index(edge.x, edge.y);
-            let index_neighbour = if edge.direction == Direction::North {
+            let index_neighbor = if edge.direction == Direction::North {
                 board.get_index(edge.x, edge.y - 1)
             } else {
                 board.get_index(edge.x - 1, edge.y)
@@ -72,23 +72,25 @@ impl Generator for Kruskal {
 
             if !self
                 .merged
-                .is_joined(index_cell as usize, index_neighbour as usize)
+                .is_joined(index_cell as usize, index_neighbor as usize)
             {
                 self.merged
-                    .join(index_cell as usize, index_neighbour as usize);
-                self.cells.push((self.step, index_cell, index_neighbour));
+                    .join(index_cell as usize, index_neighbor as usize);
+                self.cells.push((self.step, index_cell, index_neighbor));
 
                 //remove walls
                 match edge.direction {
                     Direction::North => {
                         board.cells[index_cell as usize].walls.top = false;
-                        board.cells[index_neighbour as usize].walls.bottom = false;
+                        board.cells[index_neighbor as usize].walls.bottom = false;
                     }
                     Direction::West => {
                         board.cells[index_cell as usize].walls.left = false;
-                        board.cells[index_neighbour as usize].walls.right = false;
+                        board.cells[index_neighbor as usize].walls.right = false;
                     }
                 }
+                board.cells[index_cell as usize].visited = true;
+                board.cells[index_neighbor as usize].visited = true;
             }
             self.visited_edges.push(edge);
         } else {
@@ -98,4 +100,6 @@ impl Generator for Kruskal {
         self.step += 1;
         State::Generate
     }
+
+    fn draw(&self, _board: &Board) {}
 }

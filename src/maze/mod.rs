@@ -42,6 +42,7 @@ pub enum State {
 
 pub trait Generator {
     fn step(&mut self, board: &mut Board) -> State;
+    fn draw(&self, board: &Board);
 }
 
 #[derive(Clone, Debug)]
@@ -111,30 +112,21 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn new(screen_width: i32, screen_height: i32, cell_size: i32) -> Self {
+    pub fn new(border: i32, board_size: i32, cell_size: i32) -> Self {
         let mut board = Self {
             cells: Vec::new(),
             path: vec![0],
-            board_size: 0,
+            board_size,
             finish: false,
             cell_size,
-            x: 0,
-            y: 0,
+            x: border,
+            y: border,
         };
-        board.init(screen_width, screen_height);
+        board.init();
         board
     }
 
-    fn init(&mut self, screen_width: i32, screen_height: i32) {
-        self.board_size = if screen_width / self.cell_size > screen_height / self.cell_size {
-            screen_height / self.cell_size - 1
-        } else {
-            screen_width / self.cell_size - 1
-        };
-
-        self.x = 5;
-        self.y = (screen_height - self.board_size * self.cell_size) / 2;
-
+    fn init(&mut self) {
         for i in 0..self.board_size {
             for j in 0..self.board_size {
                 self.cells.push(Cell::new(i, j));
@@ -158,7 +150,7 @@ impl Board {
     /**
      * return the neighbours [top, bottom, right, left]
      */
-    pub fn neighbours(&self, cell_index: i32) -> Vec<Option<usize>> {
+    pub fn neighbors(&self, cell_index: i32) -> Vec<Option<usize>> {
         let mut res = Vec::<Option<usize>>::new();
         if self.cells[cell_index as usize].y > 0 {
             res.push(Some(cell_index as usize - 1));
@@ -181,6 +173,29 @@ impl Board {
             res.push(None);
         }
         res
+    }
+
+    pub fn remove_wall(&mut self, cell: usize, neighbor: usize) {
+        match self.cells[cell].direction(&self.cells[neighbor]) {
+            crate::maze::Direction::North => {
+                self.cells[cell].walls.top = false;
+                self.cells[neighbor].walls.bottom = false;
+            }
+            crate::maze::Direction::South => {
+                self.cells[cell].walls.bottom = false;
+                self.cells[neighbor].walls.top = false;
+            }
+            crate::maze::Direction::East => {
+                self.cells[cell].walls.right = false;
+                self.cells[neighbor].walls.left = false;
+            }
+            crate::maze::Direction::West => {
+                self.cells[cell].walls.left = false;
+                self.cells[neighbor].walls.right = false;
+            }
+        }
+        self.cells[cell].visited = true;
+        self.cells[neighbor].visited = true;
     }
 
     pub fn draw(&self) {
@@ -211,6 +226,20 @@ impl Board {
                 }
                 if cell.walls.left {
                     raylib::DrawLine(x, y + self.cell_size, x, y, WALL_COLOR);
+                }
+                if !cell.visited {
+                    raylib::DrawRectangle(
+                        x,
+                        y,
+                        self.cell_size,
+                        self.cell_size,
+                        raylib::Color {
+                            r: 60,
+                            g: 60,
+                            b: 60,
+                            a: 100,
+                        },
+                    );
                 }
             }
         }

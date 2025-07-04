@@ -1,4 +1,11 @@
+pub mod aldous_broder;
 pub mod backtracking;
+pub mod binary_tree;
 pub mod eller;
+pub mod growing_tree;
+pub mod hunt_and_kill;
 pub mod kruskal;
 pub mod prim;
+pub mod recursive_division;
+pub mod sidewinder;
+pub mod wilson;

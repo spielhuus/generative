@@ -60,7 +60,7 @@ impl Solver {
 
     pub fn path(&mut self, board: &Board) -> State {
         let index: usize = *self.path.last().unwrap();
-        let neighbours = board.neighbours(index as i32);
+        let neighbours = board.neighbors(index as i32);
         let mut free: Vec<(usize, &Option<usize>)> = neighbours
             .iter()
             .enumerate()
@@ -103,14 +103,14 @@ impl Solver {
                             raylib::DrawCircle(
                                 board.x + weight.x as i32 * board.cell_size + board.cell_size / 2,
                                 board.y + weight.y as i32 * board.cell_size + board.cell_size / 2,
-                                board.cell_size as f32 / 10.0,
+                                board.cell_size as f32 / 5.0,
                                 raylib::WHITE,
                             );
                         } else {
                             raylib::DrawCircle(
                                 board.x + weight.x as i32 * board.cell_size + board.cell_size / 2,
                                 board.y + weight.y as i32 * board.cell_size + board.cell_size / 2,
-                                board.cell_size as f32 / 10.0,
+                                board.cell_size as f32 / 5.0,
                                 raylib::ColorFromHSV(
                                     115.0,
                                     0.75,
@@ -129,7 +129,7 @@ impl Solver {
         let mut next_cells: Vec<usize> = vec![];
         for index in &self.positions {
             let weight = self.weights[*index].unwrap();
-            let neighbours = board.neighbours(*index as i32);
+            let neighbours = board.neighbors(*index as i32);
             let free: Vec<(usize, &Option<usize>)> = neighbours
                 .iter()
                 .enumerate()
@@ -169,7 +169,7 @@ impl Solver {
                 raylib::DrawCircle(
                     board.x + weight.x as i32 * board.cell_size + board.cell_size / 2,
                     board.y + weight.y as i32 * board.cell_size + board.cell_size / 2,
-                    board.cell_size as f32 / 10.0,
+                    board.cell_size as f32 / 5.0,
                     raylib::ColorFromHSV(
                         100.0,
                         0.75,

@@ -87,5 +87,12 @@ unsafe extern "C" {
         text: *const ::std::os::raw::c_char,
         active: *mut i32,
     ) -> i32;
-
+    pub fn GuiSlider(
+        bounds: Rectangle,
+        textLeft: *const ::std::os::raw::c_char,
+        textRight: *const ::std::os::raw::c_char,
+        value: &f32,
+        minValue: f32,
+        maxValue: f32,
+    ) -> i32;
 }
