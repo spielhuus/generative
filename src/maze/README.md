@@ -69,7 +69,7 @@ neighbors, and repeats.
 2. Carve paths to unvisited neighbors; remove cells with no unvisited
 neighbors.
 
-**Binary Tree algorithm:** (Description omitted in original text)
+**Binary Tree algorithm:** For every cell, randomly carve a passage either north, or west.
 
 **Sidewinder algorithm:** Processes rows, creating runs of cells and carving
 north passages.
