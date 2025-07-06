@@ -263,11 +263,14 @@ unsafe extern "C" {
     pub fn ClearBackground(color: Color);
     pub fn ColorFromHSV(hue: f32, saturation: f32, value: f32) -> Color;
     pub fn DrawLine(start_x: i32, start_y: i32, end_x: i32, end_y: i32, color: Color);
+    pub fn DrawLineV(startPos: Vector2, endPo: Vector2, color: Color);
+    pub fn DrawLineEx(startPos: Vector2, endPos: Vector2, thick: f32, color: Color);
     pub fn DrawCircle(center_x: i32, center_y: i32, radius: f32, color: Color);
     pub fn DrawCircleV(v: Vector2, radius: f32, color: Color);
     pub fn DrawRectangle(x: i32, y: i32, width: i32, height: i32, color: Color);
     pub fn DrawRectanglePro(rec: Rectangle, origin: Vector2, rotation: f32, color: Color);
     pub fn DrawRectangleRec(rec: Rectangle, color: Color);
+    pub fn DrawTriangle(v1: Vector2, v2: Vector2, v3: Vector2, color: Color);
     pub fn CheckCollisionRecs(rec1: Rectangle, rec2: Rectangle) -> bool;
     pub fn DrawText(
         text: *const ::std::os::raw::c_char,
@@ -280,4 +283,10 @@ unsafe extern "C" {
     pub fn RayIsKeyPressed(key: i32) -> bool;
     #[link_name = "IsKeyDown"]
     pub fn RayIsKeyDown(key: i32) -> bool;
+
+    pub fn Vector2Subtract(v1: Vector2, v2: Vector2) -> Vector2;
+    pub fn Vector2Add(v1: Vector2, v2: Vector2) -> Vector2;
+    pub fn Vector2Length(v: Vector2) -> f32;
+    pub fn Vector2Normalize(v: Vector2) -> Vector2;
+    pub fn Vector2Scale(v: Vector2, scale: f32) -> Vector2;
 }

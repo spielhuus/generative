@@ -4,12 +4,16 @@ use crate::maze::{Board, CURSOR_COLOR, Generator, State};
 
 #[derive(Default)]
 pub struct Backtracking {
-    current: i32,
+    current: usize,
+    rng: ThreadRng,
 }
 
 impl Backtracking {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            current: 0,
+            rng: rand::rng(),
+        }
     }
 }
 
@@ -19,17 +23,17 @@ impl Generator for Backtracking {
         let free: Option<&Option<usize>> = n
             .iter()
             .filter(|i| i.is_some() && !board.cells[i.unwrap()].visited)
-            .choose(&mut rand::rng());
+            .choose(&mut self.rng);
 
         if let Some(&Some(free)) = free {
             // remove the walls
-            board.remove_wall(self.current as usize, free);
+            board.remove_wall(self.current, free);
             // set next cell as current
             board.cells[free].visited = true;
-            self.current = free as i32;
+            self.current = free;
             board.path.push(free)
         } else if let Some(last) = board.path.pop() {
-            self.current = last as i32;
+            self.current = last;
         } else {
             return State::GenerationDone;
         }
@@ -42,12 +46,10 @@ impl Generator for Backtracking {
         use crate::raylib;
         unsafe {
             raylib::DrawCircle(
-                board.x
-                    + board.cells[self.current as usize].x * board.cell_size
-                    + board.cell_size / 2,
-                board.y
-                    + board.cells[self.current as usize].y * board.cell_size
-                    + board.cell_size / 2,
+                (board.x + board.cells[self.current].x * board.cell_size + board.cell_size / 2)
+                    as i32,
+                (board.y + board.cells[self.current].y * board.cell_size + board.cell_size / 2)
+                    as i32,
                 board.cell_size as f32 / 10.0,
                 CURSOR_COLOR,
             );

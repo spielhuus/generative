@@ -6,9 +6,10 @@ pub const BOOL_TRUE_PROBABILITY: f64 = 0.5;
 
 #[derive(Default)]
 pub struct Sidewinder {
-    x: i32,
-    y: i32,
-    set: Vec<i32>,
+    x: usize,
+    y: usize,
+    set: Vec<usize>,
+    rng: ThreadRng,
 }
 
 impl Sidewinder {
@@ -16,35 +17,34 @@ impl Sidewinder {
         for i in 0..board.board_size - 1 {
             let cell = board.get_index(i, 0);
             let neighbor = board.get_index(i + 1, 0);
-            board.remove_wall(cell as usize, neighbor as usize);
+            board.remove_wall(cell, neighbor);
         }
         Self {
             x: 0,
             y: 1,
             set: vec![],
+            rng: rand::rng(),
         }
     }
 
     fn carve(&mut self, board: &mut Board) {
-        let selected = rand::rng().random_range(0..self.set.len()) as usize;
-        let index = self.set[selected as usize] as usize;
+        let selected = self.rng.random_range(0..self.set.len());
+        let index = self.set[selected];
         let neighbor = board.get_index(board.cells[index].x, board.cells[index].y - 1);
-        board.remove_wall(index, neighbor as usize);
+        board.remove_wall(index, neighbor);
         self.set.clear();
     }
 }
 
 impl Generator for Sidewinder {
     fn step(&mut self, board: &mut Board) -> State {
-        let mut rng = rand::rng();
-
         let cell = board.get_index(self.x, self.y);
         self.set.push(cell);
         if self.x >= board.board_size - 1 {
             self.carve(board);
-        } else if rng.random_bool(BOOL_TRUE_PROBABILITY) {
+        } else if self.rng.random_bool(BOOL_TRUE_PROBABILITY) {
             let neighbor = board.get_index(self.x + 1, self.y);
-            board.remove_wall(cell as usize, neighbor as usize);
+            board.remove_wall(cell, neighbor);
         } else {
             self.carve(board);
         }

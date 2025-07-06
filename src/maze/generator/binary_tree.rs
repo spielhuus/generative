@@ -6,20 +6,23 @@ pub const BOOL_TRUE_PROBABILITY: f64 = 0.5;
 
 #[derive(Default)]
 pub struct BinaryTree {
-    x: i32,
-    y: i32,
+    x: usize,
+    y: usize,
+    rng: ThreadRng,
 }
 
 impl BinaryTree {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            x: 0,
+            y: 0,
+            rng: rand::rng(),
+        }
     }
 }
 
 impl Generator for BinaryTree {
     fn step(&mut self, board: &mut Board) -> State {
-        let mut rng = rand::rng();
-
         if self.x >= board.board_size - 1 && self.y >= board.board_size - 1 {
             return State::GenerationDone;
         }
@@ -29,7 +32,7 @@ impl Generator for BinaryTree {
         } else if self.y == board.board_size - 1 {
             true
         } else {
-            rng.random_bool(BOOL_TRUE_PROBABILITY)
+            self.rng.random_bool(BOOL_TRUE_PROBABILITY)
         };
 
         let cell = board.get_index(self.x, self.y);
@@ -39,7 +42,7 @@ impl Generator for BinaryTree {
             board.get_index(self.x, self.y + 1)
         };
 
-        board.remove_wall(cell as usize, neighbor as usize);
+        board.remove_wall(cell, neighbor);
 
         if self.x == board.board_size - 1 {
             self.x = 0;

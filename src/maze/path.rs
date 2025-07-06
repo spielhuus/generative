@@ -1,5 +1,5 @@
 use crate::{
-    maze::{Board, Cell, PATH_COLOR, djikstra::Solver},
+    maze::{Board, Cell, PATH_COLOR},
     raylib,
 };
 
@@ -21,64 +21,64 @@ pub enum Direction {
     EndRight,
 }
 
-fn path_dot(x: i32, y: i32, cell: &Cell, cell_size: i32) {
+fn path_dot(x: usize, y: usize, cell: &Cell, cell_size: usize) {
     let half_cell = cell_size / 2;
     unsafe {
         raylib::DrawCircle(
-            x + cell.x * cell_size + half_cell,
-            y + cell.y * cell_size + half_cell,
+            (x + cell.x * cell_size + half_cell) as i32,
+            (y + cell.y * cell_size + half_cell) as i32,
             cell_size as f32 / 10.0,
             PATH_COLOR,
         );
     }
 }
 
-fn path_down(x: i32, y: i32, cell: &Cell, cell_size: i32) {
+fn path_down(x: usize, y: usize, cell: &Cell, cell_size: usize) {
     let half_cell = cell_size / 2;
     unsafe {
         raylib::DrawLine(
-            x + cell.x * cell_size + half_cell,
-            y + cell.y * cell_size + half_cell,
-            x + cell.x * cell_size + half_cell,
-            y + cell.y * cell_size + cell_size,
+            (x + cell.x * cell_size + half_cell) as i32,
+            (y + cell.y * cell_size + half_cell) as i32,
+            (x + cell.x * cell_size + half_cell) as i32,
+            (y + cell.y * cell_size + cell_size) as i32,
             PATH_COLOR,
         );
     }
 }
-fn path_up(x: i32, y: i32, cell: &Cell, cell_size: i32) {
+fn path_up(x: usize, y: usize, cell: &Cell, cell_size: usize) {
     let half_cell = cell_size / 2;
     unsafe {
         raylib::DrawLine(
-            x + cell.x * cell_size + half_cell,
-            y + cell.y * cell_size + half_cell,
-            x + cell.x * cell_size + half_cell,
-            y + cell.y * cell_size,
-            PATH_COLOR,
-        );
-    }
-}
-
-fn path_left(x: i32, y: i32, cell: &Cell, cell_size: i32) {
-    let half_cell = cell_size / 2;
-    unsafe {
-        raylib::DrawLine(
-            x + cell.x * cell_size + half_cell,
-            y + cell.y * cell_size + half_cell,
-            x + cell.x * cell_size,
-            y + cell.y * cell_size + half_cell,
+            (x + cell.x * cell_size + half_cell) as i32,
+            (y + cell.y * cell_size + half_cell) as i32,
+            (x + cell.x * cell_size + half_cell) as i32,
+            (y + cell.y * cell_size) as i32,
             PATH_COLOR,
         );
     }
 }
 
-fn path_right(x: i32, y: i32, cell: &Cell, cell_size: i32) {
+fn path_left(x: usize, y: usize, cell: &Cell, cell_size: usize) {
     let half_cell = cell_size / 2;
     unsafe {
         raylib::DrawLine(
-            x + cell.x * cell_size + half_cell,
-            y + cell.y * cell_size + half_cell,
-            x + cell.x * cell_size + cell_size,
-            y + cell.y * cell_size + half_cell,
+            (x + cell.x * cell_size + half_cell) as i32,
+            (y + cell.y * cell_size + half_cell) as i32,
+            (x + cell.x * cell_size) as i32,
+            (y + cell.y * cell_size + half_cell) as i32,
+            PATH_COLOR,
+        );
+    }
+}
+
+fn path_right(x: usize, y: usize, cell: &Cell, cell_size: usize) {
+    let half_cell = cell_size / 2;
+    unsafe {
+        raylib::DrawLine(
+            (x + cell.x * cell_size + half_cell) as i32,
+            (y + cell.y * cell_size + half_cell) as i32,
+            (x + cell.x * cell_size + cell_size) as i32,
+            (y + cell.y * cell_size + half_cell) as i32,
             PATH_COLOR,
         );
     }
@@ -220,14 +220,17 @@ fn direction(current: &Cell, prev: Option<&Cell>, next: Option<&Cell>) -> Direct
     panic!("direction not found")
 }
 
-pub fn draw_path(board: &Board, solver: &Solver) {
+pub fn draw_path(board: &Board, path: &[usize]) {
+    if path.len() == 1 {
+        return;
+    }
     // draw the path
     let x = board.x;
     let y = board.y;
     unsafe {
-        for (i, item) in solver.path.iter().enumerate() {
-            let prev = if i > 0 { solver.path.get(i - 1) } else { None };
-            let next = solver.path.get(i + 1); // get handles out-of-bounds by returning None
+        for (i, item) in path.iter().enumerate() {
+            let prev = if i > 0 { path.get(i - 1) } else { None };
+            let next = path.get(i + 1); // get handles out-of-bounds by returning None
             let direction = direction(
                 &board.cells[*item],
                 if let Some(prev) = prev {
@@ -244,19 +247,19 @@ pub fn draw_path(board: &Board, solver: &Solver) {
             match direction {
                 Direction::Horizontal => {
                     raylib::DrawLine(
-                        x + board.cells[*item].x * board.cell_size,
-                        y + board.cells[*item].y * board.cell_size + board.cell_size / 2,
-                        x + board.cells[*item].x * board.cell_size + board.cell_size,
-                        y + board.cells[*item].y * board.cell_size + board.cell_size / 2,
+                        (x + board.cells[*item].x * board.cell_size) as i32,
+                        (y + board.cells[*item].y * board.cell_size + board.cell_size / 2) as i32,
+                        (x + board.cells[*item].x * board.cell_size + board.cell_size) as i32,
+                        (y + board.cells[*item].y * board.cell_size + board.cell_size / 2) as i32,
                         PATH_COLOR,
                     );
                 }
                 Direction::Vertical => {
                     raylib::DrawLine(
-                        x + board.cells[*item].x * board.cell_size + board.cell_size / 2,
-                        y + board.cells[*item].y * board.cell_size,
-                        x + board.cells[*item].x * board.cell_size + board.cell_size / 2,
-                        y + board.cells[*item].y * board.cell_size + board.cell_size,
+                        (x + board.cells[*item].x * board.cell_size + board.cell_size / 2) as i32,
+                        (y + board.cells[*item].y * board.cell_size) as i32,
+                        (x + board.cells[*item].x * board.cell_size + board.cell_size / 2) as i32,
+                        (y + board.cells[*item].y * board.cell_size + board.cell_size) as i32,
                         PATH_COLOR,
                     );
                 }

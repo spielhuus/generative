@@ -95,4 +95,9 @@ unsafe extern "C" {
         minValue: f32,
         maxValue: f32,
     ) -> i32;
+    pub fn GuiCheckBox(
+        bounds: Rectangle,
+        text: *const ::std::os::raw::c_char,
+        checked: &bool,
+    ) -> i32;
 }

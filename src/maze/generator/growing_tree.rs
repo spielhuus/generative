@@ -5,6 +5,7 @@ use crate::maze::{Board, Generator, State};
 pub struct GrowingTree {
     visited: Vec<usize>,
     cells: Vec<usize>,
+    rng: ThreadRng,
 }
 
 impl GrowingTree {
@@ -13,6 +14,7 @@ impl GrowingTree {
         Self {
             visited: vec![],
             cells: vec![cell],
+            rng: rand::rng(),
         }
     }
 
@@ -23,10 +25,10 @@ impl GrowingTree {
 
 impl Generator for GrowingTree {
     fn step(&mut self, board: &mut Board) -> State {
-        let index = rand::rng().random_range(0..self.cells.len()) as usize;
+        let index = self.rng.random_range(0..self.cells.len());
         let cell = self.cells[index];
         let neighbors: Vec<usize> = board
-            .neighbors(cell as i32)
+            .neighbors(cell)
             .into_iter()
             .flatten()
             .filter(|item| !self.contains(item))
@@ -36,7 +38,7 @@ impl Generator for GrowingTree {
             self.cells.retain(|&x| x != cell);
             self.visited.push(cell);
         } else {
-            let index = rand::rng().random_range(0..neighbors.len()) as usize;
+            let index = self.rng.random_range(0..neighbors.len());
             let neighbor = neighbors[index];
             board.remove_wall(cell, neighbor);
             self.cells.push(neighbor);

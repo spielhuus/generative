@@ -11,17 +11,17 @@ enum Direction {
 
 #[derive(Debug)]
 struct Edge {
-    x: i32,
-    y: i32,
+    x: usize,
+    y: usize,
     direction: Direction,
 }
 
 pub struct Kruskal {
     edges: Vec<Edge>,
-    cells: Vec<(i32, i32, i32)>,
+    cells: Vec<(usize, usize, usize)>,
     merged: DisjointSet,
     visited_edges: Vec<Edge>,
-    step: i32,
+    step: usize,
 }
 
 impl Kruskal {
@@ -70,27 +70,23 @@ impl Generator for Kruskal {
                 board.get_index(edge.x - 1, edge.y)
             };
 
-            if !self
-                .merged
-                .is_joined(index_cell as usize, index_neighbor as usize)
-            {
-                self.merged
-                    .join(index_cell as usize, index_neighbor as usize);
+            if !self.merged.is_joined(index_cell, index_neighbor) {
+                self.merged.join(index_cell, index_neighbor);
                 self.cells.push((self.step, index_cell, index_neighbor));
 
                 //remove walls
                 match edge.direction {
                     Direction::North => {
-                        board.cells[index_cell as usize].walls.top = false;
-                        board.cells[index_neighbor as usize].walls.bottom = false;
+                        board.cells[index_cell].walls.top = false;
+                        board.cells[index_neighbor].walls.bottom = false;
                     }
                     Direction::West => {
-                        board.cells[index_cell as usize].walls.left = false;
-                        board.cells[index_neighbor as usize].walls.right = false;
+                        board.cells[index_cell].walls.left = false;
+                        board.cells[index_neighbor].walls.right = false;
                     }
                 }
-                board.cells[index_cell as usize].visited = true;
-                board.cells[index_neighbor as usize].visited = true;
+                board.cells[index_cell].visited = true;
+                board.cells[index_neighbor].visited = true;
             }
             self.visited_edges.push(edge);
         } else {

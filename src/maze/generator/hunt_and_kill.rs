@@ -14,15 +14,19 @@ pub struct HuntAndKill {
     visited: Vec<usize>,
     current_cell: usize,
     state: IState,
+    rng: ThreadRng,
 }
 
 impl HuntAndKill {
-    pub fn new(board: &Board) -> Self {
-        let current_cell = rand::rng().random_range(0..board.board_size ^ 2) as usize;
+    pub fn new(board: &mut Board) -> Self {
+        let mut rng = rand::rng();
+        let current_cell = rng.random_range(0..board.board_size ^ 2) as usize;
+        board.cells[current_cell].visited = true;
         Self {
             visited: vec![current_cell],
             current_cell,
             state: IState::Kill,
+            rng,
         }
     }
 
@@ -39,23 +43,23 @@ impl Generator for HuntAndKill {
                     for x in 0..board.board_size {
                         let current = board.get_index(x, y);
                         // skip if visited
-                        if self.contains(&(current as usize)) {
+                        if self.contains(&(current)) {
                             continue;
                         }
                         // get visited
-                        let visited_neighbours: Vec<usize> = board
+                        let visited_neighbors: Vec<usize> = board
                             .neighbors(current)
                             .into_iter()
                             .flatten()
                             .filter(|item| self.contains(item))
                             .collect();
 
-                        if !visited_neighbours.is_empty() {
-                            self.current_cell = current as usize;
-                            self.visited.push(current as usize);
-                            let index =
-                                rand::rng().random_range(0..visited_neighbours.len()) as usize;
-                            let next = visited_neighbours[index];
+                        if !visited_neighbors.is_empty() {
+                            self.current_cell = current;
+                            board.cells[current].visited = true;
+                            self.visited.push(current);
+                            let index = self.rng.random_range(0..visited_neighbors.len());
+                            let next = visited_neighbors[index];
                             match board.cells[self.current_cell].direction(&board.cells[next]) {
                                 crate::maze::Direction::North => {
                                     board.cells[self.current_cell].walls.top = false;
@@ -82,22 +86,22 @@ impl Generator for HuntAndKill {
                 return State::GenerationDone;
             }
             IState::Kill => {
-                // get the neighbours of the current cell and pick a random neighbour
-                let neighbours: Vec<usize> = board
-                    .neighbors(self.current_cell as i32)
+                // get the neighbors of the current cell and pick a random neighbor
+                let neighbors: Vec<usize> = board
+                    .neighbors(self.current_cell)
                     .into_iter()
                     .flatten()
                     .filter(|item| !self.contains(item))
                     .collect();
 
-                // start hunt when no neighbours where found
-                if neighbours.is_empty() {
+                // start hunt when no neighbors where found
+                if neighbors.is_empty() {
                     self.state = IState::Hunt;
                     return State::Generate;
                 }
 
-                let index = rand::rng().random_range(0..neighbours.len()) as usize;
-                let next = neighbours[index];
+                let index = self.rng.random_range(0..neighbors.len());
+                let next = neighbors[index];
                 // remove wall
                 if !self.contains(&next) {
                     match board.cells[self.current_cell].direction(&board.cells[next]) {
@@ -118,6 +122,7 @@ impl Generator for HuntAndKill {
                             board.cells[next].walls.right = false;
                         }
                     }
+                    board.cells[next].visited = true;
                     self.visited.push(next);
                 }
                 self.current_cell = next;
@@ -134,8 +139,10 @@ impl Generator for HuntAndKill {
     fn draw(&self, board: &Board) {
         unsafe {
             raylib::DrawCircle(
-                board.x + board.cells[self.current_cell].x * board.cell_size + board.cell_size / 2,
-                board.y + board.cells[self.current_cell].y * board.cell_size + board.cell_size / 2,
+                (board.x + board.cells[self.current_cell].x * board.cell_size + board.cell_size / 2)
+                    as i32,
+                (board.y + board.cells[self.current_cell].y * board.cell_size + board.cell_size / 2)
+                    as i32,
                 board.cell_size as f32 / 4.0,
                 CURSOR_COLOR,
             );

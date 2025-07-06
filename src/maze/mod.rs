@@ -1,10 +1,12 @@
-pub mod djikstra;
 pub mod generator;
 pub mod path;
+pub mod solver;
+
+use std::fmt;
 
 use crate::raylib;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Direction {
     North,
     South,
@@ -31,7 +33,7 @@ pub const CURSOR_COLOR: raylib::Color = raylib::Color {
     a: 255,
 };
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub enum State {
     Wait,
     Generate,
@@ -40,8 +42,26 @@ pub enum State {
     Done,
 }
 
+impl fmt::Display for State {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            State::Wait => write!(f, "Waiting"),
+            State::Generate => write!(f, "Generating"),
+            State::GenerationDone => write!(f, "Generation Done"),
+            State::Solve => write!(f, "Solving"),
+            State::Done => write!(f, "Done"),
+        }
+    }
+}
+
 pub trait Generator {
     fn step(&mut self, board: &mut Board) -> State;
+    fn draw(&self, board: &Board);
+}
+
+pub trait Solver {
+    fn step(&mut self, board: &Board) -> Result<State, String>;
+    fn get_path(&self) -> &Vec<usize>;
     fn draw(&self, board: &Board);
 }
 
@@ -66,14 +86,14 @@ impl Default for Walls {
 
 #[derive(Clone, Debug)]
 pub struct Cell {
-    pub x: i32,
-    pub y: i32,
+    pub x: usize,
+    pub y: usize,
     pub visited: bool,
     pub walls: Walls,
 }
 
 impl Cell {
-    pub fn new(x: i32, y: i32) -> Self {
+    pub fn new(x: usize, y: usize) -> Self {
         Self {
             x,
             y,
@@ -104,15 +124,15 @@ impl Cell {
 pub struct Board {
     pub cells: Vec<Cell>,
     pub path: Vec<usize>,
-    pub board_size: i32,
+    pub board_size: usize,
     pub finish: bool,
-    pub cell_size: i32,
-    pub x: i32,
-    pub y: i32,
+    pub cell_size: usize,
+    pub x: usize,
+    pub y: usize,
 }
 
 impl Board {
-    pub fn new(border: i32, board_size: i32, cell_size: i32) -> Self {
+    pub fn new(border: usize, board_size: usize, cell_size: usize) -> Self {
         let mut board = Self {
             cells: Vec::new(),
             path: vec![0],
@@ -132,7 +152,7 @@ impl Board {
                 self.cells.push(Cell::new(i, j));
             }
         }
-        self.cells[0].visited = true;
+        // self.cells[0].visited = true;
         self.cells[0].walls.left = false;
         self.cells.last_mut().unwrap().walls.right = false;
     }
@@ -141,34 +161,34 @@ impl Board {
         &mut self.cells[index]
     }
 
-    pub fn get_index(&self, x: i32, y: i32) -> i32 {
+    pub fn get_index(&self, x: usize, y: usize) -> usize {
         let index = x * self.board_size + y;
-        assert!(self.cells[index as usize].x == x && self.cells[index as usize].y == y,);
+        assert!(self.cells[index].x == x && self.cells[index].y == y,);
         index
     }
 
     /**
-     * return the neighbours [top, bottom, right, left]
+     * return the neighbors [top, bottom, right, left]
      */
-    pub fn neighbors(&self, cell_index: i32) -> Vec<Option<usize>> {
+    pub fn neighbors(&self, cell_index: usize) -> Vec<Option<usize>> {
         let mut res = Vec::<Option<usize>>::new();
-        if self.cells[cell_index as usize].y > 0 {
-            res.push(Some(cell_index as usize - 1));
+        if self.cells[cell_index].y > 0 {
+            res.push(Some(cell_index - 1));
         } else {
             res.push(None);
         }
-        if self.cells[cell_index as usize].y < self.board_size - 1 {
-            res.push(Some(cell_index as usize + 1));
+        if self.cells[cell_index].y < self.board_size - 1 {
+            res.push(Some(cell_index + 1));
         } else {
             res.push(None);
         }
-        if self.cells[cell_index as usize].x > 0 {
-            res.push(Some(cell_index as usize - self.board_size as usize));
+        if self.cells[cell_index].x > 0 {
+            res.push(Some(cell_index - self.board_size));
         } else {
             res.push(None);
         }
-        if self.cells[cell_index as usize].x < self.board_size - 1 {
-            res.push(Some(cell_index as usize + self.board_size as usize));
+        if self.cells[cell_index].x < self.board_size - 1 {
+            res.push(Some(cell_index + self.board_size));
         } else {
             res.push(None);
         }
@@ -204,35 +224,47 @@ impl Board {
                 let x = self.x + cell.x * self.cell_size;
                 let y = self.y + cell.y * self.cell_size;
                 if cell.walls.top {
-                    raylib::DrawLine(x, y, x + self.cell_size, y, WALL_COLOR);
+                    raylib::DrawLine(
+                        x as i32,
+                        y as i32,
+                        (x + self.cell_size) as i32,
+                        y as i32,
+                        WALL_COLOR,
+                    );
                 }
                 if cell.walls.right {
                     raylib::DrawLine(
-                        x + self.cell_size,
-                        y,
-                        x + self.cell_size,
-                        y + self.cell_size,
+                        (x + self.cell_size) as i32,
+                        y as i32,
+                        (x + self.cell_size) as i32,
+                        (y + self.cell_size) as i32,
                         WALL_COLOR,
                     );
                 }
                 if cell.walls.bottom {
                     raylib::DrawLine(
-                        x + self.cell_size,
-                        y + self.cell_size,
-                        x,
-                        y + self.cell_size,
+                        (x + self.cell_size) as i32,
+                        (y + self.cell_size) as i32,
+                        x as i32,
+                        (y + self.cell_size) as i32,
                         WALL_COLOR,
                     );
                 }
                 if cell.walls.left {
-                    raylib::DrawLine(x, y + self.cell_size, x, y, WALL_COLOR);
+                    raylib::DrawLine(
+                        x as i32,
+                        (y + self.cell_size) as i32,
+                        x as i32,
+                        y as i32,
+                        WALL_COLOR,
+                    );
                 }
                 if !cell.visited {
                     raylib::DrawRectangle(
-                        x,
-                        y,
-                        self.cell_size,
-                        self.cell_size,
+                        x as i32,
+                        y as i32,
+                        (self.cell_size) as i32,
+                        (self.cell_size) as i32,
                         raylib::Color {
                             r: 60,
                             g: 60,
